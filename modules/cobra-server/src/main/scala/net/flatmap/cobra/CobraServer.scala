@@ -263,13 +263,13 @@ class CobraServer(val directory: File) {
         log.info("serving presentation from " + directory.toString)
         log.info(s"server is listening on ${localAddress.getHostName}:${localAddress.getPort}")
 
-        (Desktop.isDesktopSupported ? Desktop.getDesktop)
-          .filter(_.isSupported(Desktop.Action.BROWSE))
-          .fold {
-            log.info(s"please browse to ${localAddress.getHostName}:${localAddress.getPort} with your web browser")
-          } { desktop =>
-            desktop.browse(java.net.URI.create(s"http://${localAddress.getHostName}:${localAddress.getPort}"))
-          }
+//        (Desktop.isDesktopSupported ? Desktop.getDesktop)
+//          .filter(_.isSupported(Desktop.Action.BROWSE))
+//          .fold {
+//            log.info(s"please browse to ${localAddress.getHostName}:${localAddress.getPort} with your web browser")
+//          } { desktop =>
+//            desktop.browse(java.net.URI.create(s"http://${localAddress.getHostName}:${localAddress.getPort}"))
+//          }
       case Failure(e) =>
         log.error(s"binding failed with ${e.getMessage}")
     }

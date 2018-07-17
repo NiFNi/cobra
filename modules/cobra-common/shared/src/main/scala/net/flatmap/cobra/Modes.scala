@@ -23,8 +23,14 @@ case object Isabelle extends Mode(
   Comments.block("\\(\\*\\*+","\\*\\)"),
   new Regex("(?s)\\(\\*\\(\\*\\)(.*?)\\(\\*\\)\\*\\)|\\(\\*\\(\\*\\)(.*?)\\(\\*\\|(.*?)\\)\\*\\)|\\(\\*\\((.*?)\\|\\*\\)(.*?)\\(\\*\\)\\*\\)"),
   Set("thy"))
+case object LanguageServer extends Mode(
+  "python", "text/x-python",
+  Comments.line("#+"),
+  new Regex("(?s)\\/\\*\\(\\*\\/(.*?)\\/\\*\\)\\*\\/|\\/\\*\\(\\*\\/(.*?)\\/\\*\\|(.*?)\\)\\*\\/|\\/\\*\\((.*?)\\|\\*\\/(.*?)\\/\\*\\)\\*\\/"),
+  Set("py")
+)
 case object Plain extends Mode("plain","text/plain",new Regex("$^"),new Regex("$^"),Set.empty)
 
 object Mode {
-  def modes = Set(Scala,Haskell,Isabelle)
+  def modes = Set(Scala,Haskell,Isabelle, LanguageServer)
 }

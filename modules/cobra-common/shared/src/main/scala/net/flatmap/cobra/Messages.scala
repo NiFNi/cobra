@@ -58,6 +58,7 @@ trait Picklers {
       .addConcreteType[Isabelle.type]
       .addConcreteType[Plain.type]
       .addConcreteType[Haskell.type]
+      .addConcreteType[LanguageServer.type]
 
   implicit val annotationMessagePickler: Pickler[AnnotationMessage] =
     compositePickler[AnnotationMessage]

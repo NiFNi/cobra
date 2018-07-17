@@ -3,6 +3,10 @@ package net.flatmap.cobra
 import better.files.File.OpenOptions
 import net.flatmap.cobra.isabelle.IsabelleUtil
 import better.files._
+import net.flatmap.cobra.lss._
+import akka.actor._
+import akka.stream.ActorMaterializer
+import play.api.libs.json._
 
 /**
   * Created by martin on 03.02.16.
@@ -136,5 +140,58 @@ object Cobra extends App {
     server.start()
     while (scala.io.StdIn.readLine != "exit") ()
     server.stop()
+  }
+}
+
+object Test extends App {
+
+  main()
+
+  def main() {
+    implicit val system = ActorSystem("abc")
+    implicit val materializer = ActorMaterializer()
+    var act = system.actorOf(LsCommunicator.props)
+    val workspacePath = "/tmp/test"
+    act ! InitializeParams(0, workspacePath, ClientCapabilities())
+    Thread.sleep(2000)
+    act ! Initialized()
+    Thread.sleep(2000)
+    act ! DidOpenTextDocumentParams(TextDocumentItem("file:///tmp/test/test.dart", "dart", 0, """void main() {
+  var name = 'Voyager I';
+  print(name);
+}"""))
+    Thread.sleep(2000)
+    val a: TextDocumentDefinitionRequest = TextDocumentDefinitionRequest(TextDocumentPositionParams(TextDocumentIdentifier("file:///tmp/test/test.dart"), Position(2, 10)))
+//    implicit val b = new Format[TextDocumentDefinitionRequest] {
+//      override def reads(json: JsValue) = Reads.of[TextDocumentPositionParams].reads(json).map(TextDocumentDefinitionRequest.apply)
+//      override def writes(o: TextDocumentDefinitionRequest) = TextDocumentDefinitionRequest.unapply(o) match {
+//        case a: Option[TextDocumentPositionParams] => Writes.of[TextDocumentPositionParams].writes(a.get)
+//      }
+//    }
+    act ! TextDocumentDefinitionRequest(TextDocumentPositionParams(TextDocumentIdentifier("file:///tmp/test/test.dart"), Position(2, 10)))
+    var con = true
+    while (con) {
+      val in = scala.io.StdIn.readLine
+      println(in)
+      in match {
+        case "exit" => con = false
+        case "" =>
+          println("killing old actor")
+          act ! PoisonPill
+          println("restarting new")
+          act = system.actorOf(LsCommunicator.props)
+          val workspacePath = "/tmp/test"
+          act ! InitializeParams(0, workspacePath, ClientCapabilities())
+          Thread.sleep(2000)
+          act ! Initialized()
+      }
+    }
+    println("cleaning up")
+    println("shutdown language server")
+    act ! Shutdown()
+    act ! PoisonPill
+    println("poisoned actor")
+    system.terminate()
+    println("terminated system")
   }
 }

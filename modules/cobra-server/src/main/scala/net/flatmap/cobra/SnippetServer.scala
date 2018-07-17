@@ -3,6 +3,7 @@ package net.flatmap.cobra
 import akka.actor.{Actor, ActorLogging, ActorRef, Props, Terminated}
 import net.flatmap.cobra.ghc.HaskellService
 import net.flatmap.cobra.isabelle.IsabelleService
+import net.flatmap.cobra.lss.LanguageServerService
 import net.flatmap.cobra.scalac.ScalaService
 import net.flatmap.collaboration.{Annotations, Document, Server}
 
@@ -14,7 +15,8 @@ object SnippetServer {
   val services: Map[Mode,LanguageService] = Map(
     Isabelle -> IsabelleService,
     Scala -> ScalaService,
-    Haskell -> HaskellService
+    Haskell -> HaskellService,
+    LanguageServer -> LanguageServerService
   )
 }
 
@@ -26,6 +28,7 @@ class SnippetServer(env: Map[String,String]) extends Actor with ActorLogging {
     case InitDoc(id,content,mode) =>
       val service = SnippetServer.services.get(mode).map { ls =>
         val src = context.actorOf(ls.props(env),mode.name)
+        log.info("mode: " + mode.name)
         src ! ResetSnippet(id,content,0)
         src
       }

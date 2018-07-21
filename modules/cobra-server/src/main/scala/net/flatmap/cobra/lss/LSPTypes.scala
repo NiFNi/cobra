@@ -147,14 +147,19 @@ case class RawMarkedString(language: String, value: String) extends MarkedString
 
 case class MarkdownString(contents: String) extends MarkedString
 
+case class MarkUpContent(kind: String, value: String) extends MarkedString
+
 object MarkedString {
   implicit val reads: Reads[MarkedString] =
-    Json.reads[RawMarkedString].map(x => x: MarkedString).orElse(Json.reads[MarkdownString].map(x => x: MarkedString))
+    Json.reads[RawMarkedString].map(x => x: MarkedString).orElse(Json.reads[MarkdownString].map(x => x: MarkedString)).orElse(Json.reads[MarkUpContent].map(x => x: MarkedString))
 
   implicit val writes: Writes[MarkedString] = Writes[MarkedString] {
     case raw: RawMarkedString => Json.writes[RawMarkedString].writes(raw)
     case md: MarkdownString => Json.writes[MarkdownString].writes(md)
+    case mu: MarkUpContent => Json.writes[MarkUpContent].writes(mu)
   }
+
+
 }
 
 
@@ -365,3 +370,5 @@ case class TextDocumentContentChangeEvent(
 object TextDocumentContentChangeEvent {
   implicit val format = Json.format[TextDocumentContentChangeEvent]
 }
+
+case class HoverCapabilities(dynamicRegistration: Option[Boolean], contentFormat: Seq[String])

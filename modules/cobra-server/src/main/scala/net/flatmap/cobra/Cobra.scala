@@ -7,6 +7,7 @@ import net.flatmap.cobra.lss._
 import akka.actor._
 import akka.stream.ActorMaterializer
 import play.api.libs.json._
+import com.dhpcs.jsonrpc.JsonRpcMessage._
 
 /**
   * Created by martin on 03.02.16.
@@ -140,6 +141,14 @@ object Cobra extends App {
     server.start()
     while (scala.io.StdIn.readLine != "exit") ()
     server.stop()
+  }
+}
+
+object Test2 extends App {
+  main()
+  def main() = {
+    val a = LanguageServerService.toPosition(9, 10, "abcde\nhuehue")
+    println(a)
   }
 }
 

@@ -31,12 +31,18 @@ case class InitializeParams(
                                * The rootPath of the workspace. Is null
                                * if no folder is open.
                                */
-                             rootPath: String,
+                             rootUri: String,
 
                              /**
                                * The capabilities provided by the client (editor)
                                */
-                             capabilities: ClientCapabilities) extends ServerCommand
+                             capabilities: ClientCapabilities,
+                             initializationOptions: InitializationOptions = InitializationOptions(true)) extends ServerCommand
+
+case class InitializationOptions(diagnostics: Boolean)
+object InitializationOptions {
+  implicit val format = Json.using[Json.WithDefaultValues].format[InitializationOptions]
+}
 
 case class InitializeError(retry: Boolean)
 
@@ -207,7 +213,7 @@ case class TextDocumentDefinitionRequest(params: TextDocumentPositionParams) ext
 
 case class TextDocumentHoverRequest(params: TextDocumentPositionParams) extends ServerCommand
 
-case class Hover(contents: Seq[MarkedString], range: Option[Range]) extends ResultResponse
+case class Hover(contents: MarkedString, range: Option[Range]) extends ResultResponse
 
 object Hover {
   implicit val format = Json.using[Json.WithDefaultValues].format[Hover]
@@ -312,6 +318,6 @@ object ResultResponse extends ResponseCompanion[ResultResponse] {
     "textDocument/completion" -> Json.using[Json.WithDefaultValues].format[CompletionList],
     "textDocument/definition" -> valueFormat(DefinitionResult)(_.params),
     "textDocument/hover" -> Json.using[Json.WithDefaultValues].format[Hover],
-    "textDocument/documentSymbol" -> valueFormat(DocumentSymbolResult)(_.params),
+    //"textDocument/documentSymbol" -> valueFormat(DocumentSymbolResult)(_.params),
     "shutdown" -> Json.using[Json.WithDefaultValues].format[ShutdownResult])
 }

@@ -19,9 +19,10 @@ class FileSaver(workspacePath: String) extends Actor with ActorLogging {
   log.info("filesaver started")
 
   override def receive: Receive = {
-    case (str: String, path: String) => {
+    case (str: String, path: String, uri: String) => {
       log.info("file saved")
       save(str, workspacePath + path)
+      context.parent ! DidSaveTextDocumentParams(TextDocumentIdentifier(uri))
     }
     case _ => log.warning("Filesaver did get something that were not strings")
   }

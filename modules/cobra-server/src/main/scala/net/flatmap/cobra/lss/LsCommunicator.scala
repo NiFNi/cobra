@@ -13,13 +13,16 @@ import com.dhpcs.jsonrpc._
 import com.dhpcs.jsonrpc.JsonRpcMessage._
 import net.flatmap.cobra.lss.JsonRpcUtils.valueFormat
 
+import scala.collection.mutable
+import scala.collection.mutable.Map
+
 /**
   * Created by nif on 05.03.18.
   */
 class LsCommunicator extends Actor with ActorLogging {
   implicit val dispatcher = context.system.dispatcher
   implicit val ec: ExecutionContext = ExecutionContext.global
-  val server: ProcessBuilder = Process("dartls")
+  val server: ProcessBuilder = Process("solargraph stdio")
   var curId = 0
 
 
@@ -41,8 +44,8 @@ class LsCommunicator extends Actor with ActorLogging {
 
   def error(input: InputStream) = {
     /* TODO move to future */
-    val t = new InputStreamThread(input, self)
-    new Thread(t).start()
+    //val t = new InputStreamThread(input, self)
+    //new Thread(t).start()
   }
 
   override def receive: Receive = {
@@ -55,18 +58,20 @@ class LsCommunicator extends Actor with ActorLogging {
   }
 
   def initialized(outputStream: OutputStream): Receive = {
+    val waiting: mutable.Map[CorrelationId, (ServerCommand, String, String, Int, Int)] = mutable.Map.empty
+
     {
-      case command: TextDocumentDefinitionRequest =>
-        //implicit val positionParamsFormat = Json.using[Json.WithDefaultValues].format[TextDocumentPositionParams]
-        //implicit val format: Format[TextDocumentDefinitionRequest] = valueFormat(TextDocumentDefinitionRequest)(_.params)
-        log.info("got definitionrequest to write")
+      case (command: TextDocumentHoverRequest, guid: String, id: String, from: Int, to: Int) =>
+        implicit val positionParamsFormat = Json.using[Json.WithDefaultValues].format[TextDocumentPositionParams]
+        val s: JsValue = Json.toJson(command.params)
+        val rpcMessage = JsonRpcRequestMessage("textDocument/hover", s.as[JsObject], NumericCorrelationId(curId))
+        implicit val format: Format[TextDocumentDefinitionRequest] = valueFormat(TextDocumentDefinitionRequest)(_.params)
+        log.info("got servercommand to write")
         log.info(command.toString)
-        val server = ServerCommand.write(command, NumericCorrelationId(curId))
-        log.info("a")
-        val json = Json.toJson(server)
-        log.info("b")
+        //val server: JsonRpcMessage = ServerCommand.write(command, NumericCorrelationId(curId))
+        val json = Json.toJson(rpcMessage)
         val a: String = Json.stringify(json)
-        log.info("c")
+        waiting += (NumericCorrelationId(curId) -> (command, guid, id, from, to))
         curId += 1
         val msg: String = "Content-Length: " + a.length() + "\r\n" +
           "Content-Type: application/vscode-jsonrpc; charset=utf8" + "\r\n\r\n" + a + "\r\n"
@@ -75,17 +80,16 @@ class LsCommunicator extends Actor with ActorLogging {
         writer.println(msg)
         writer.flush()
         log.info("writer: " + a)
+
       case command: ServerCommand =>
         implicit val positionParamsFormat = Json.using[Json.WithDefaultValues].format[TextDocumentPositionParams]
         implicit val format: Format[TextDocumentDefinitionRequest] = valueFormat(TextDocumentDefinitionRequest)(_.params)
         log.info("got servercommand to write")
         log.info(command.toString)
         val server = ServerCommand.write(command, NumericCorrelationId(curId))
-        log.info("a")
         val json = Json.toJson(server)
-        log.info("b")
         val a: String = Json.stringify(json)
-        log.info("c")
+        waiting += (NumericCorrelationId(curId) -> (command, "", "", 0, 0))
         curId += 1
         val msg: String = "Content-Length: " + a.length() + "\r\n" +
           "Content-Type: application/vscode-jsonrpc; charset=utf8" + "\r\n\r\n" + a + "\r\n"
@@ -120,6 +124,9 @@ class LsCommunicator extends Actor with ActorLogging {
               case Right(message) => message match {
                 // Notification handling
                 case notification: JsonRpcNotificationMessage => log.info("received notification")
+                  Notification.read(notification).get match {
+                    case d: PublishDiagnostics => context.parent ! d.diagnostics
+                  }
                   log.info(notification.toString)
                 // Request handling
                 case request: JsonRpcRequestMessage =>
@@ -130,7 +137,17 @@ class LsCommunicator extends Actor with ActorLogging {
                   case success: JsonRpcResponseSuccessMessage =>
                     log.info("received success")
                     log.info(success.toString)
-                    //log.info(ResultResponse.read(success).toString)
+                    waiting.get(success.id).foreach { command =>
+                      command match {
+                        case (_: InitializeParams, _, _, _, _) => self ! Initialized()
+                        case (_: TextDocumentHoverRequest, guid, id, from, to) =>
+                          context.parent ! (ResultResponse.read(success, "textDocument/hover").get, guid, id, from, to)
+                        case c => log.warning("got answer to unknown response" + c)
+                      }
+                      waiting -= success.id
+
+                    }
+                    //log.info(ResultResponse.read(success, success.).toString)
                   case error: JsonRpcResponseErrorMessage =>
                     log.error(error.toString)
                 }
@@ -138,7 +155,7 @@ class LsCommunicator extends Actor with ActorLogging {
             }
 
         }
-      case a => log.info("got something else")
+      case a => log.info("got something else" + a)
     }
   }
 }

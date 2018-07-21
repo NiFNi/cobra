@@ -24,10 +24,10 @@ case object Isabelle extends Mode(
   new Regex("(?s)\\(\\*\\(\\*\\)(.*?)\\(\\*\\)\\*\\)|\\(\\*\\(\\*\\)(.*?)\\(\\*\\|(.*?)\\)\\*\\)|\\(\\*\\((.*?)\\|\\*\\)(.*?)\\(\\*\\)\\*\\)"),
   Set("thy"))
 case object LanguageServer extends Mode(
-  "python", "text/x-python",
+  "ruby", "text/x-ruby",
   Comments.line("#+"),
   new Regex("(?s)\\/\\*\\(\\*\\/(.*?)\\/\\*\\)\\*\\/|\\/\\*\\(\\*\\/(.*?)\\/\\*\\|(.*?)\\)\\*\\/|\\/\\*\\((.*?)\\|\\*\\/(.*?)\\/\\*\\)\\*\\/"),
-  Set("py")
+  Set("ruby")
 )
 case object Plain extends Mode("plain","text/plain",new Regex("$^"),new Regex("$^"),Set.empty)
 

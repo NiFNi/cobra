@@ -16,6 +16,9 @@ class InputStreamThread(stream: InputStream, parent: ActorRef) extends Runnable 
       val reader = new BufferedReader(new InputStreamReader(stream))
       var line: String = reader.readLine()
       var length: Int = -1
+      if (line == null) {
+        println("reached end of inputstream")
+      }
       while (length == -1) {
         if (line.startsWith("Content-Length: ")) {
           length = line.split(" ")(1).toInt
@@ -32,6 +35,7 @@ class InputStreamThread(stream: InputStream, parent: ActorRef) extends Runnable 
       val charsIn = reader.read(buffer, 0, length)
 
       val data = buffer.mkString
+      //println(data)
       parent ! Read(data)
     }
   }

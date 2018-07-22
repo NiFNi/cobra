@@ -1,14 +1,10 @@
 package net.flatmap.cobra.lss
 
-import java.io.File
 import java.nio.file.{FileSystems, Files, Paths}
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Cancellable, Props}
 import net.flatmap.cobra._
 import net.flatmap.collaboration._
-import play.api.libs.json.{JsResult, Json, _}
-import com.dhpcs.jsonrpc._
-import com.dhpcs.jsonrpc.JsonRpcMessage._
 
 import scala.concurrent.duration._
 
@@ -62,7 +58,9 @@ class LanguageServerService(env: Map[String,String]) extends Actor with ActorLog
     }
 
     // Create temp directory and filesaver
-    val workspacePath: String = Files.createTempDirectory(Paths.get(System.getProperty("java.io.tmpdir")), "cobra_ls_").normalize.toString ++ FileSystems.getDefault.getSeparator
+    val workspacePath: String = Files.createTempDirectory(Paths.get(
+      System.getProperty("java.io.tmpdir")), "cobra_ls_").normalize
+      .toString ++ FileSystems.getDefault.getSeparator
     val saver = context.actorOf(FileSaver.props(workspacePath))
 
     val communicator = context.actorOf(LsCommunicator.props)
@@ -97,7 +95,7 @@ class LanguageServerService(env: Map[String,String]) extends Actor with ActorLog
 //            communicator ! change
             val close = DidCloseTextDocumentParams(TextDocumentIdentifier(uri))
             communicator ! close
-            saver ! (content, id + ".rb", uri)
+            saver ! (content, id + ".rb")
             val open = DidOpenTextDocumentParams(TextDocumentItem(uri, "ruby", 0, content))
             communicator ! open
 
@@ -124,14 +122,11 @@ class LanguageServerService(env: Map[String,String]) extends Actor with ActorLog
             annotations.annotate(1, AnnotationOptions(Set.empty, None, List(ErrorMessage(message)), None))
           case Diagnostic(range, Some(DiagnosticSeverity.Warning), code, source, message) =>
             annotations.annotate(1, AnnotationOptions(Set.empty, None, List(WarningMessage(message)), None))
-          case Diagnostic(range, Some(DiagnosticSeverity.Information), code, source, message) =>
-            annotations.annotate(1, AnnotationOptions(Set.empty, None, List(InfoMessage(message)), None))
-          case Diagnostic(range, Some(DiagnosticSeverity.Hint), code, source, message) =>
+          case Diagnostic(range, _, code, source, message) =>
             annotations.annotate(1, AnnotationOptions(Set.empty, None, List(InfoMessage(message)), None))
           case o => log.warning("got other diagnostic: " + o)
         }
         clientInterface.localAnnotations("messages", annotations)
-        server ! Annotate(id, "abc", annotations, rev)
       //case save: DidSaveTextDocumentParams => communicator ! save
       case other => log.warning("unhandled message: " + other)
     }

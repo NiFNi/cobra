@@ -39,7 +39,7 @@ case class InitializeParams(
                              capabilities: ClientCapabilities,
                              initializationOptions: InitializationOptions = InitializationOptions(true)) extends ServerCommand
 
-case class InitializationOptions(diagnostics: Boolean)
+case class InitializationOptions(diagnostic: Boolean)
 object InitializationOptions {
   implicit val format = Json.using[Json.WithDefaultValues].format[InitializationOptions]
 }

@@ -26,7 +26,6 @@ class InputStreamThread(stream: InputStream, parent: ActorRef) extends Runnable 
           line = reader.readLine()
         }
       }
-      //println(length)
       while (line != "") {
         line = reader.readLine()
       }
@@ -35,7 +34,6 @@ class InputStreamThread(stream: InputStream, parent: ActorRef) extends Runnable 
       val charsIn = reader.read(buffer, 0, length)
 
       val data = buffer.mkString
-      //println(data)
       parent ! Read(data)
     }
   }

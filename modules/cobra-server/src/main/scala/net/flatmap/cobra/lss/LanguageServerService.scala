@@ -88,18 +88,12 @@ class LanguageServerService(env: Map[String,String]) extends Actor with ActorLog
       case Refresh =>
         files.get(id).foreach {
           case (content, client, uri, version) =>
-            // Workaround: close->reopen document as change did not work
-//            val change = DidChangeTextDocumentParams(VersionedTextDocumentIdentifier(uri, version+1),
-//              Seq(TextDocumentContentChangeEvent(None, None, content)))
+            val change = DidChangeTextDocumentParams(VersionedTextDocumentIdentifier(uri, version+1),
+              Seq(TextDocumentContentChangeEvent(None, None, content)))
             files.update(id, (content, client, uri, version+1))
-//            communicator ! change
-            val close = DidCloseTextDocumentParams(TextDocumentIdentifier(uri))
-            communicator ! close
+            communicator ! change
             saver ! (content, id + ".rb")
             val open = DidOpenTextDocumentParams(TextDocumentItem(uri, "ruby", 0, content))
-            communicator ! open
-
-
         }
         refreshDelay = None
       case AcknowledgeEdit(id2) if id == id2 => clientInterface.serverAck()
@@ -116,18 +110,34 @@ class LanguageServerService(env: Map[String,String]) extends Actor with ActorLog
           guid, id, from, to)// Get hover info
       case (Hover(s: MarkUpContent, range), guid: String, id: String, from: Int, to: Int) => server ! Information(id, from, to, s.value, guid)
       case diags: Seq[Diagnostic] =>
-        val annotations = Annotations(List.empty)
-        diags.foreach {
-          case Diagnostic(range, Some(DiagnosticSeverity.Error), code, source, message) =>
-            annotations.annotate(1, AnnotationOptions(Set.empty, None, List(ErrorMessage(message)), None))
-          case Diagnostic(range, Some(DiagnosticSeverity.Warning), code, source, message) =>
-            annotations.annotate(1, AnnotationOptions(Set.empty, None, List(WarningMessage(message)), None))
-          case Diagnostic(range, _, code, source, message) =>
-            annotations.annotate(1, AnnotationOptions(Set.empty, None, List(InfoMessage(message)), None))
-          case o => log.warning("got other diagnostic: " + o)
+        files.get(id).foreach {
+          case (content, _, _, _) => {
+            var result = new Annotations
+            val lines = content.split("\n").map(_.length() + 1).toList
+            var position = 0
+            def offset(line: Int, ch: Int): Int =
+              lines.take(line-1).reduceOption(_ + _).getOrElse(0) + ch
+            diags.map({
+              case Diagnostic(Range(s,_), seve, _, _, message) => (offset(s.line, s.character), seve, message)
+            }).sortBy(_._1).foreach {
+              case (o, s, m) =>
+                if (o > position) {
+                  result = result.plain(o - position)
+                  position = o
+                }
+                s match {
+                  case Some(DiagnosticSeverity.Error) =>
+                    result = result.annotate(0, AnnotationOptions(messages = List(ErrorMessage(m))))
+                  case Some(DiagnosticSeverity.Warning) =>
+                    result = result.annotate(0, AnnotationOptions(messages = List(ErrorMessage(m))))
+                  case Some(_) =>
+                    result = result.annotate(0, AnnotationOptions(messages = List(ErrorMessage(m))))
+                }
+            }
+            result.plain(content.length - position)
+            clientInterface.localAnnotations("languageserver", result)
+          }
         }
-        clientInterface.localAnnotations("messages", annotations)
-      //case save: DidSaveTextDocumentParams => communicator ! save
       case other => log.warning("unhandled message: " + other)
     }
   }

@@ -37,16 +37,11 @@ class LsCommunicator extends Actor with ActorLogging {
 
   // start reader thread
   def reader(input: InputStream) = {
-    /* TODO move to future */
     val t = new InputStreamThread(input, self)
     new Thread(t).start()
   }
 
-  def error(input: InputStream) = {
-    /* TODO move to future */
-    //val t = new InputStreamThread(input, self)
-    //new Thread(t).start()
-  }
+  def error(input: InputStream) = {}
 
   override def receive: Receive = {
     case out: OutputStream =>

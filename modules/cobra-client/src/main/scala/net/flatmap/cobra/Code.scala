@@ -129,8 +129,9 @@ object Code {
             if (mode == Isabelle) {
               elem.innerHTML = body
             } else {
-              CodeMirror.runMode(body,mode.mime,elem)
-              elem.classes += "pre"
+//              CodeMirror.runMode(body,mode.mime,elem)
+//              elem.classes += "pre"
+              elem.innerHTML = body
             }
             hoverInfo.foreach(_.clear())
             hoverInfo.clear()

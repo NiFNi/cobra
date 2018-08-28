@@ -5,6 +5,13 @@ import java.nio.file.{FileSystems, Files, Paths}
 import akka.actor.{Actor, ActorLogging, ActorRef, Cancellable, Props}
 import net.flatmap.cobra._
 import net.flatmap.collaboration._
+import com.vladsch.flexmark.ast.Node
+import com.vladsch.flexmark.ext.gfm.strikethrough.StrikethroughExtension
+import com.vladsch.flexmark.ext.tables.TablesExtension
+import com.vladsch.flexmark.html.HtmlRenderer
+import com.vladsch.flexmark.parser.Parser
+import com.vladsch.flexmark.util.options.MutableDataSet
+
 
 import scala.concurrent.duration._
 
@@ -108,7 +115,13 @@ class LanguageServerService(env: Map[String,String]) extends Actor with ActorLog
         communicator ! (TextDocumentHoverRequest(TextDocumentPositionParams(
           TextDocumentIdentifier(fileUri), LanguageServerService.toPosition(from, to, files(id)._1))),
           guid, id, from, to)// Get hover info
-      case (Hover(s: MarkUpContent, range), guid: String, id: String, from: Int, to: Int) => server ! Information(id, from, to, s.value, guid)
+      case (Hover(s: MarkUpContent, range), guid: String, id: String, from: Int, to: Int) =>
+        val parser = Parser.builder.build
+        val renderer = HtmlRenderer.builder.build
+        val document = parser.parse(s.value)
+        renderer.render(document)
+        if (!s.value.isEmpty)
+          server ! Information(id, from, to, renderer.render(document), guid)
       case diags: Seq[Diagnostic] =>
         files.get(id).foreach {
           case (content, _, _, _) => {
@@ -129,9 +142,9 @@ class LanguageServerService(env: Map[String,String]) extends Actor with ActorLog
                   case Some(DiagnosticSeverity.Error) =>
                     result = result.annotate(0, AnnotationOptions(messages = List(ErrorMessage(m))))
                   case Some(DiagnosticSeverity.Warning) =>
-                    result = result.annotate(0, AnnotationOptions(messages = List(ErrorMessage(m))))
+                    result = result.annotate(0, AnnotationOptions(messages = List(WarningMessage(m))))
                   case Some(_) =>
-                    result = result.annotate(0, AnnotationOptions(messages = List(ErrorMessage(m))))
+                    result = result.annotate(0, AnnotationOptions(messages = List(InfoMessage(m))))
                 }
             }
             result.plain(content.length - position)

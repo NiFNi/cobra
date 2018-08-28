@@ -1,0 +1,231 @@
+<section>
+    <h2>Bachelorarbeit Kolloquium</h2>
+    <h3>Integration des Language Server Protocols in eine auf Operational Transformation basierende Editorumgebung</h3>
+    <hr>
+    <h4>Nico Fricke</h4>
+    <p>29.08.2018</p>
+</section>
+
+<section>
+    <h2>Gliederung</h2>
+    <ol>
+        <li>Motivation</li>
+        <li>Grundlagen <ul>
+            <li>Language Server Protocol</li>
+            <li>Operational Transformation</li>
+            <li>Cobra</li>
+        </ul>
+        </li>
+        <li>Zielsetzung</li>
+        <li>Umsetzung</li>
+        <li>Ergebnis und Ausblick</li>
+    </ol>
+</section>
+
+<section>
+    <h2>Motivation</h2>
+    Kollaboratives Arbeiten:<br>
+    <ul>
+        <li>Office Lösungen bereits vorhanden</li>
+        <li>Editoren:
+            <ul>
+                <li>Mangel an Sprachenunterstützung</li>
+                <li>Lösung: Language Server Protocol</li>
+            </ul>
+        </li>
+    </ul>
+</section>
+
+<section>
+    <h2>Language Server Protocol</h2>
+    <ul>
+        <li>Von Microsoft entwickelter Standard</li>
+        <li>Kommunikation zwischen <b>einem</b> Client (zum Beispiel ein Editor) und einem Language Server</li>
+        <li>JSON-RPC Schnittstelle</li>
+        <li>Benötigt einen Workspace</li>
+    </ul>
+</section>
+
+
+<section>
+    <h2>Operational Transformation</h2>
+    <ul>
+        <li>Nebenläufigkeitsmodell für das kollaborative Arbeiten an Dokumenten</li>
+        <li>Operationen beschreiben den Unterschied zwischen Versionen</li>
+        <li>Definierte Menge an Operationen
+            <ul>
+                <li>Insert(String)</li>
+                <li>Retain(Int)</li>
+                <li>Delete(Int)</li>
+            </ul>
+        </li>
+        <li>Operationen werden miteinander transformiert</li>
+    </ul>
+
+</section>
+
+<section>
+    <h2>Operational Transformation</h2>
+    <div style="display: flex; justify-content: center">
+        <img src="img/ot.png" style="width: 90%">
+    </div>
+</section>
+
+<!--<section>-->
+    <!--<h2>Operational Transformation</h2>-->
+    <!--<ul>-->
+        <!--<li>Dokument A = "abc"</li>-->
+        <!--<li>O1 = [Delete, Retain, Retain, Insert("d")]</li>-->
+        <!--<li>O2 = [Insert("c"), Retain, Retain, Retain]</li>-->
+        <!--<li>O1' = [Retain, Delete, Retain, Retain, Insert("d")]</li>-->
+        <!--<li>O2' = [Insert("c"), Retain, Retain, Retain]</li>-->
+        <!--<li>A ○ O1 ○ O2' = A ○ O2 ○ O1' = A' = "cbcd"</li>-->
+    <!--</ul>-->
+<!--</section>-->
+
+<section>
+    <h2>Cobra</h2>
+    <ul>
+        <li>Präsentationstool</li>
+        <li>Interaktives Darstellen von Code:
+        <ul>
+            <li>Scala</li>
+            <li>Haskell</li>
+            <li>Isabelle</li>
+        </ul>
+        </li>
+        <li>Kollaboratives Arbeiten auf Basis von Operational Transformation</li>
+    </ul>
+</section>
+
+<section>
+    <h2>Architektur</h2>
+    <div style="display: flex; justify-content: center">
+        <img src="img/arch.png" style="width: 55%">
+    </div>
+    <ul>
+        <li>Client/Server</li>
+        <li>Services werden wie Clients behandelt (Universal Collaboration)</li>
+        <li>Kommunikation über CobraMessages</li>
+    </ul>
+</section>
+
+<section>
+    <h2>CobraMessages</h2>
+    <ul>
+        <li>Änderung</li>
+        <li>Informationen</li>
+        <li>Annotationen</li>
+    </ul>
+    <code src="#person-def-hs" class="no-warnings"></code>
+</section>
+
+<section>
+    <h2>Zielsetzung</h2>
+    <ul>
+        <li>Konzept der Integration des LSP in Cobra</li>
+        <li>Implementierung</li>
+    </ul>
+</section>
+
+<section>
+    <h2>Konzept</h2>
+    <div style="display: flex; justify-content: center">
+        <img src="img/messages.png" style="width: 50%" >
+    </div>
+</section>
+
+<section>
+    <h2>Integration</h2>
+    Umwandlung von Nachrichten im Service:
+    <ul>
+        <li>Änderungen → didChange + Änderung auf Dateisystem propagieren</li>
+        <li>Informationen ↔ hover</li>
+        <li>Annotationen ← publishDiagnostics</li>
+    </ul>
+</section>
+
+<section>
+    <h2>Erweiterung</h2>
+    <ul>
+        <li>Erweiterung von Informationen:
+            <ul>
+                <li>Service muss auf weitere Antworten warten</li>
+                <li>Zusammenfügen von allen Antworten</li>
+            </ul>
+        </li>
+        <li>Anhängen weiterer Informationen an Annotations</li>
+        <li>Einführen neuer Cobramessages
+            <ul>
+                <li>Benötigt Anpassung im Server, Client und Service</li>
+            </ul>
+        </li>
+
+    </ul>
+</section>
+
+<section>
+    <h2>Beispiel</h2>
+    Rename:<br>
+    <ul>
+        <li>Auslöser im Client</li>
+        <li>Rename-Anfrage vom Client an Server</li>
+        <li>Weiterleitung an Service</li>
+        <li>Umwandlung von Cobramessage zu LSMessage</li>
+        <li>Weiterleitung an LS</li>
+        <li>Verarbeitung der Antwort:
+            <ul>
+                <li>Liste an Änderungen am Dokument in Operationen umwandeln</li>
+                <li>Operationen an Server senden</li>
+            </ul>
+        </li>
+    </ul>
+</section>
+
+
+<section>
+    <h2>Ergebnis</h2>
+    <ul>
+        <li>Umsetzung des LS-Communicators
+            <ul>
+                <li>STDIO Kommunikation mit LS</li>
+                <li>JSON-RPC parsen/schreiben</li>
+            </ul>
+        </li>
+        <li>Implementierung des Filessavers</li>
+        <li>Implementierung des LS-Services </li>
+        <li>Implementierung von Teilen des LS-Services</li>
+    </ul>
+</section>
+
+<section>
+    <h2>Ergebnis</h2>
+    <code class="ruby" src="src/Test.rb"></code>
+</section>
+
+<section>
+    <h2>Ausblick</h2>
+    <ul>
+        <li>Implementierung weiterer Konzepte</li>
+        <li>Dynamische LS-Sprachen Zuordnung</li>
+        <li>Verbesserte Darstellung der aktuellen Meldungen</li>
+    </ul>
+</section>
+
+<section>
+    <h2>Quellen</h2>
+    <ul>
+        <li>https://www.jsonrpc.org/specification</li>
+        <li>https://microsoft.github.io/language-server-protocol/</li>
+        <li>Martin Ring und Christoph Lüth. »Collaborative Interactive Theorem Proving with Clide«. In: Interactive Theorem Proving.</li>
+        <li>Chengzheng Sun und Clarence Ellis. »Operational Transformation in Real-time Group Editors: Issues, Algorithms, and Achievements«. In: Proceedings of the 1998 ACM Conference on Computer Supported Cooperative Work.</li>
+    </ul>
+</section>
+
+<section>
+    <h2>Fragen?</h2>
+    <h3>Vielen Dank für ihre Aufmerksamkeit.</h3>
+</section>
+
+
+<code class="hidden" id="person-hs" src="src/Example.hs"></code>

@@ -50,7 +50,8 @@ lazy val server = (project in file("modules/cobra-server"))
     libraryDependencies += "com.github.pathikrit" %% "better-files" % "2.16.0",
     libraryDependencies += "com.github.pathikrit" %% "better-files-akka" % "2.16.0",
     libraryDependencies += "com.typesafe.play" %% "play-json" % "2.6.7",
-    libraryDependencies += "com.dhpcs" %% "scala-json-rpc" % "2.0.1"
+    libraryDependencies += "com.dhpcs" %% "scala-json-rpc" % "2.0.1",
+    libraryDependencies += "com.vladsch.flexmark" % "flexmark-all" % "0.34.18"
   ).dependsOn(commonJVM, clientAssets)
 
 lazy val clientAssets  = (project in file("modules/cobra-client"))

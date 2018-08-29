@@ -88,9 +88,9 @@ body {
 .reveal .slides > section > h2:first-child::after, .reveal .slides > section > section:first-child > h2:first-child::after {
     content: "";
     background-image: url("DFKI_Logo.svg");
-    background-position: 0.1em 0.2em;
+    background-position: 0em 0.2em;
     width: 200px;
-    height: 1em;
+    height: 1.2em;
     display: inline-flex;
     float: right;
     background-size: contain;
